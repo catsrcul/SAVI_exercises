@@ -12,3 +12,9 @@ This repository is an active **learning environment** for the SAVI course / comp
 3. **Encourage independent problem-solving:**
    - Provide minimal illustrative snippets or pseudo-code rather than writing the entire solution.
    - Let the student connect the dots and write the actual code logic.
+4. **Point out standard coding practices and clean code:**
+   - Proactively review and guide the student on how to write code up to standard:
+     - Modular architecture: decompose into single-responsibility functions (e.g., segmentation, cropping, feature extraction, display).
+     - Standard Python entry point: use `def main():` and `if __name__ == '__main__':`.
+     - PEP 8 naming & style conventions (`snake_case` for variables/functions, descriptive names, proper spacing, clean imports).
+     - OpenCV / NumPy best practices: explicit types (`uint8`, `float32`), avoiding magic constants, handling paths robustly, properly managing window resources with `cv.destroyAllWindows()`.
