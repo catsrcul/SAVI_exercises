@@ -50,8 +50,8 @@ def main():  # this is our main function
     cv2.imshow('image annotated', image_annotated)
 
     # Limitations of the template matching
-    # 1. the computation demand is very large. Testing all hyphoteis
-    # 2. what happens if the template as a different size in comparison to the object that appear on the model?
+    # 1. the computation demand is very large. Testing all hypothesis
+    # 2. what happens if the template as a different size in comparison to the object that apear on the model?
 
     # -------------------------------------------------------
     # Ex 4d)
@@ -71,12 +71,27 @@ def main():  # this is our main function
     image_with_object_colored[y:y + h, x:x + w, :] = image[y:y + h, x:x + w, :]
 
     # Make the dog more redish
-    image_with_object_colored[y:y + h, x:x + w, 2] = image[y:y + h, x:x + w, 2] * 1.4
+    # image_with_object_colored[y:y + h, x:x + w, 2] = image[y:y + h, x:x + w, 2] * 1.4
 
     cv2.imshow('image_with_object_colored', image_with_object_colored)
 
-    cv2.waitKey(0)
+    # getting an image cutout from another file
+    # this command lets the user choose a 2 points to drag and choose the area of interest
+    # space or enter to confirm and 'c' to cancel the roi choice
+    bbox = cv2.selectROI("Select Template", image) # bbox is bounding box
 
+    # it returns a tupple (x, y, w, h)
+    x, y, w, h = bbox
+
+    # 3. cropping the template
+    template = image[y:y+h, x:x+w]
+
+    # res = cv2.matchTemplate(image, template, cv2.TM_CCORR_NORMED)
+
+    cv2.imshow('new image matching', res)
+
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
 if __name__ == "__main__":
     main()
