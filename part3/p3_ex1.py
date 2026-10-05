@@ -24,9 +24,9 @@ def main(): # this is our main function
     fps = cap.get(cv2.CAP_PROP_FPS)
     print('fps = ' + str(fps))
 
-    fgbg = cv2.createBackgroundSubtractorMOG2(history=0, varThreshold=100, detectShadows=True)
+    fgbg = cv2.createBackgroundSubtractorMOG2(history=300, varThreshold=100, detectShadows=False)
 
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
 
     while True:
 
@@ -42,10 +42,12 @@ def main(): # this is our main function
 
         fg_mask = fgbg.apply(image_rgb)
 
-        opened_mask = cv2.morphologyEx(src=fg_mask, op=cv2.MORPH_OPEN, kernel=kernel, iterations=4)
+        opened_mask = cv2.morphologyEx(src=fg_mask, op=cv2.MORPH_OPEN, kernel=kernel, iterations=2)
+        closed_mask = cv2.morphologyEx(src=opened_mask, op=cv2.MORPH_CLOSE, kernel=kernel, iterations=3)
 
         cv2.imshow('foreground mask natural', fg_mask)
         cv2.imshow("foreground_mask", opened_mask)
+        cv2.imshow('closed mask', closed_mask)
 
         # no_background_video = image_rgb
 
@@ -61,7 +63,7 @@ def main(): # this is our main function
         # -------------------------------------------------------------------------
         # handle key press events
         # -------------------------------------------------------------------------
-        key = cv2.waitKey(50)
+        key = cv2.waitKey(100)
         if key == 113:
             print('Pressed q. Aborting ')
             break
