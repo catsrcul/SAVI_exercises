@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # Shebang line" specifies the interpreter.
 
+# personal solution
+
 # imports --------------------
 import cv2
 import numpy as np
