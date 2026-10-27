@@ -6,7 +6,26 @@
 import json
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
+import argparse
+import os
 from scipy.optimize import least_squares
+
+def signal_handler(sig, frame):
+    """Graceful termination on Ctrl+C."""
+    print("\n[INFO] Exiting application...")
+    sys.exit(0)
+
+
+def parse_arguments():
+    """Sets up CLI flags and returns them as a dictionary."""
+    ap = argparse.ArgumentParser(description="SAVI Optimization Pipeline")
+    ap.add_argument("-c", "--capture", action="store_true", help="Launch interactive point collection")
+    ap.add_argument("-f", "--file", type=str, default="points.json", help="Path to JSON dataset")
+    ap.add_argument("-ni", "--iterations", type=int, default=1000, help="Number of random iterations")
+    ap.add_argument("-m", "--model", type=str, default="line", choices=["line", "composed"], help="Model type")
+
+    return vars(ap.parse_args())
 
 class InteractiveLineFitter:
     """
@@ -168,17 +187,89 @@ class InteractiveLineFitter:
         ax.legend()
         plt.show()
 
+    def load_points(self, json_filepath: str = "points.json"):
+        """Loads points from a JSON file, checking if it exists first."""
+        if not os.path.exists(json_filepath):
+            raise FileNotFoundError(f"File '{json_filepath}' not found!")
+
+        with open(json_filepath, "r") as f:
+            data = json.load(f)
+        self.xs = data['xs']
+        self.ys = data['ys']
+        print(f"Loaded {len(self.xs)} points from '{json_filepath}'.")
+
+    # 1. FUNÇÃO DE PREDIÇÃO VETORIZADA
+    @staticmethod
+    def predict_composed(x, m, b1, a, c, b2):
+        """Calcula y para qualquer array x com base nos dois ramos."""
+        return np.where(x <= 0, m * x + b1, a * (x ** 2) + c * x + b2)
+
+    # 2. PARTE A: OTIMIZAÇÃO ALEATÓRIA (RANDOM FITTING)
+    def fit_composed_random(self):
+        # Read the object's internal data:
+        x_data = np.array(self.xs, dtype=float)
+        y_data = np.array(self.ys, dtype=float)
+
+        def residuals(params, x_eval, y_true):
+            # Evaluate using your static method:
+            y_pred = self.predict_composed(x_eval, *params)
+            return y_pred - y_true
+
+        initial_guess = [1.0, 1.0, 1.0, 1.0, 1.0]
+        res = least_squares(residuals, x0=initial_guess, args=(x_data, y_data))
+        return res.x
+
+    def plot_composed(self, params):
+        fig, ax = plt.subplots()
+        ax.plot(self.xs, self.ys, 'ro', label='Ground Truth')
+        ax.axvline(0, color='gray', linestyle=':', label='x = 0')  # Domain boundary
+
+        x_eval = np.linspace(self.x_lim[0], self.x_lim[1], 400)
+        # Unpack the 5 parameters (*params) into the prediction function:
+        y_eval = self.predict_composed(x_eval, *params)
+
+        ax.plot(x_eval, y_eval, 'g-', label='Composed Fit')
+        ax.legend()
+        plt.show()
+
+    # 3. PARTE B: OTIMIZAÇÃO POR SCI-PY (LEAST SQUARES)
+    def fit_composed_least_squares(xs, ys):
+        def residuals(params, x_eval, y_true):
+            # Desempacota os 5 coeficientes
+            m, b1, a, c, b2 = params
+            y_pred = predict_composed(x_eval, m, b1, a, c, b2)
+            # Retorna o vetor 1D de diferenças
+            return y_pred - y_true
+
+        # Chute inicial com 5 variáveis [m0, b1_0, a0, c0, b2_0]
+        initial_guess = [0.0, 0.0, 0.0, 0.0, 0.0]
+
+        resultado = least_squares(residuals, x0=initial_guess, args=(xs, ys))
+        return resultado.x  # Retorna [m, b1, a, c, b2] ótimos
+
 
 
 # --- Execution ---
 if __name__ == "__main__":
+    args = parse_arguments() # getting the args from argparser
     app = InteractiveLineFitter(x_lim=(-10, 10), y_lim=(-5, 5))
 
+    # Decision: Capture fresh points or read existing file
+    if args['capture']:
+        app.capture_points(args['file'])
+    else:
+        app.load_points(args['file'])
+
+    # Decision: Model routing
+    if args['model'] == "composed":
+        # Call your composed fitting methods using args['iterations']
+        pass
+
     # Step 1: Click points on the plot, then press ESC
-    app.capture_points("points.json")
+    # app.capture_points("points.json")
 
     # Step 2: Fit model to the captured points
-    app.fit_and_animate(num_iterations=120)
+    # app.fit_and_animate(num_iterations=120)
 
 
     m_opt, b_opt = app.fit_least_squares()

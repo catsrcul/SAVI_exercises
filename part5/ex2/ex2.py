@@ -172,7 +172,6 @@ class InteractiveLineFitter:
 
 # --- Execution ---
 if __name__ == "__main__":
-    app = InteractiveLineFitter(x_lim=(-10, 10), y_lim=(-5, 5))
 
     # Step 1: Click points on the plot, then press ESC
     app.capture_points("points.json")
