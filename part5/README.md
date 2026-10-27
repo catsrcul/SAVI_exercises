@@ -1,28 +1,28 @@
-# SAVI - Parte 5: Otimização e Ajuste de Modelos
+# SAVI - Part 5: Optimization and Model Fitting
 
-## Visão Geral
+## Overview
 
-Esta unidade aborda técnicas de recolha de dados interativa e algoritmos de otimização numérica para ajuste de curvas (model fitting):
-1. **Recolha interativa de dados (GUI Event Handling com Matplotlib)** e persistência em JSON.
-2. **Ajuste Estocástico / Aleatório (Random Line Fitting)** via amostragem de Monte Carlo e avaliação de métricas de erro.
-3. **Ajuste Numérico por Mínimos Quadrados (Nonlinear Least Squares)** utilizando o algoritmo Levenberg-Marquardt / Trust Region Reflective via `scipy.optimize.least_squares`.
-4. **Modelos Não-Lineares / Por Ramos (Composed/Piecewise Model Fitting)** combinando diferentes regimes funcionais ($x \le 0$ e $x > 0$).
+This module covers interactive data collection techniques and numerical optimization algorithms for curve fitting (model fitting):
+1. **Interactive Data Acquisition (GUI Event Handling with Matplotlib)** and JSON persistence.
+2. **Stochastic / Random Fitting (Random Line Fitting)** via Monte Carlo sampling and error metric evaluation.
+3. **Nonlinear Least Squares Fitting** using the Levenberg-Marquardt / Trust Region Reflective algorithms via `scipy.optimize.least_squares`.
+4. **Piecewise / Composed Model Fitting** combining distinct functional regimes ($x \le 0$ and $x > 0$).
 
 ---
 
-## 1. Exercício 1: Geração Interativa de Pontos (`generate_data`)
+## 1. Exercise 1: Interactive Point Generation (`generate_data`)
 
-### Fundamento Teórico & Event Loop
-A interface gráfica do Matplotlib opera através de um loop de eventos acionado por interrupções do sistema operativo (ratos e teclados).
-Para registar amostras discretas do utilizador:
-- Liga-se o evento de clique `button_press_event` a uma função de callback.
-- Converte-se a posição física do cursor em coordenadas normalizadas do sistema de eixos: $(x_{\text{data}}, y_{\text{data}})$.
-- Interrompe-se a recolha através do evento de teclado `key_press_event` ao intercetar a tecla `escape`.
+### Theoretical Background & Event Loop
+Matplotlib's graphical user interface operates via an event loop driven by operating system interrupts (mouse and keyboard).
+To record discrete user samples:
+- Bind the click event `button_press_event` to a callback function.
+- Convert the physical cursor coordinates into normalized data coordinates: $(x_{\text{data}}, y_{\text{data}})$.
+- Terminate user input via the keyboard event `key_press_event` upon intercepting the `escape` key.
 
-### Mecânica de Implementação e Assinaturas
-- Registo de listeners: `fig.canvas.mpl_connect(event_name: str, callback_fn: Callable)`.
-- Exportação estruturada para dicionário: `{"xs": [...], "ys": [...]}`.
-- Serialização via `json.dump(obj, fp, indent=4)`.
+### Implementation Mechanics and Signatures
+- Registering event listeners: `fig.canvas.mpl_connect(event_name: str, callback_fn: Callable)`.
+- Exporting data to a dictionary: `{"xs": [...], "ys": [...]}`.
+- Serialization via `json.dump(obj, fp, indent=4)`.
 
 ```python
 import matplotlib.pyplot as plt
@@ -54,29 +54,29 @@ with open("points.json", "w") as f:
 
 ---
 
-## 2. Exercício 2: Random Line Fitting (Monte Carlo Search)
+## 2. Exercise 2: Random Line Fitting (Monte Carlo Search)
 
-### Formulação Matemática
-Dado um conjunto de $N$ pontos $\{(x_i, y'_i)\}_{i=0}^{N-1}$ e o modelo afim:
+### Mathematical Formulation
+Given a set of $N$ points $\{(x_i, y'_i)\}_{i=0}^{N-1}$ and an affine model:
 
 $$y_i = m \cdot x_i + b$$
 
-O objetivo é encontrar os parâmetros $\mathbf{p}^* = (m^*, b^*)$ que minimizam o erro acumulado. Para evitar o cancelamento entre erros positivos e negativos, calcula-se a norma $L_1$ (MAE) ou $L_2$ (MSE):
+The objective is to determine parameters $\mathbf{p}^* = (m^*, b^*)$ that minimize cumulative error. To prevent positive and negative residuals from canceling each other out, either $L_1$ (MAE) or $L_2$ (MSE) norms are used:
 
 $$J_{L1}(m, b) = \sum_{i=0}^{N-1} |(m \cdot x_i + b) - y'_i|$$
 
 $$J_{L2}(m, b) = \sum_{i=0}^{N-1} ((m \cdot x_i + b) - y'_i)^2$$
 
-### Mecânica Numérica
-Numa busca aleatória uniforme dentro de limites pré-definidos $[m_{\min}, m_{\max}]$ e $[b_{\min}, b_{\max}]$:
-- Sorteiam-se candidatos: `m = np.random.uniform(m_low, m_high)`.
-- Avalia-se o custo vetorial sobre NumPy: `err = np.sum(np.abs((m * x + b) - y))`.
-- Mantém-se o par com menor custo acumulado.
+### Numerical Mechanics
+In a uniform random search over predefined parameter intervals $[m_{\min}, m_{\max}]$ and $[b_{\min}, b_{\max}]$:
+- Draw candidate samples: `m = np.random.uniform(m_low, m_high)`.
+- Compute the vector cost in NumPy: `err = np.sum(np.abs((m * x + b) - y))`.
+- Track and keep the parameter pair with the lowest accumulated cost.
 
 ```python
 import numpy as np
 
-def evaluate_random_line(x_arr, y_arr, n_iter=1000):
+def evaluate_random_line(x_arr: np.ndarray, y_arr: np.ndarray, n_iter: int = 1000):
     best_error = float('inf')
     best_params = (0.0, 0.0)
     
@@ -96,33 +96,33 @@ def evaluate_random_line(x_arr, y_arr, n_iter=1000):
 
 ---
 
-## 3. Exercício 3: Ajuste por Mínimos Quadrados (`scipy.optimize.least_squares`)
+## 3. Exercise 3: Least Squares Fitting (`scipy.optimize.least_squares`)
 
-### Formulação do Otimizador
-Diferente da busca estocástica cega, os métodos de gradiente convergem deterministicamente para mínimos locais/globais.
-O problema é expresso na forma vetorial:
+### Optimizer Formulation
+Unlike blind stochastic search, gradient-based numerical methods converge deterministically toward local/global minima.
+The problem is formulated in vector form:
 
 $$\min_{\mathbf{p}} \frac{1}{2} \|\mathbf{r}(\mathbf{p})\|_2^2 = \min_{\mathbf{p}} \frac{1}{2} \sum_{i=0}^{N-1} r_i(\mathbf{p})^2$$
 
-Onde $\mathbf{r}(\mathbf{p}) \in \mathbb{R}^N$ é o **vetor de resíduos**:
+Where $\mathbf{r}(\mathbf{p}) \in \mathbb{R}^N$ is the **residual vector**:
 
 $$r_i(\mathbf{p}) = y_{\text{model}}(x_i; \mathbf{p}) - y'_i$$
 
-### Mecânica da API SciPy
-- **Assinatura:** `scipy.optimize.least_squares(fun, x0, args=(), ...)`
-- `fun`: Função do tipo `fun(params, *args) -> np.ndarray`. Deve devolver um **vetor 1D de resíduos com dimensionalidade $N$**, e **não** uma soma escalar.
-- `x0`: Array de estimativa inicial dos parâmetros.
-- O resultado é acedido no atributo `.x` do objeto retornado.
+### SciPy API Mechanics
+- **Signature:** `scipy.optimize.least_squares(fun, x0, args=(), ...)`
+- `fun`: A callable with signature `fun(params, *args) -> np.ndarray`. It must return a **1D residual vector of length $N$**, and **not** a scalar sum.
+- `x0`: Array containing initial parameter estimates.
+- The optimized parameter vector is accessed via the `.x` attribute of the returned `OptimizeResult` object.
 
 ```python
 from scipy.optimize import least_squares
 import numpy as np
 
-def residuals(params, x, y):
+def residuals(params: np.ndarray, x: np.ndarray, y: np.ndarray) -> np.ndarray:
     m, b = params
     return (m * x + b) - y
 
-# Execução do otimizador com x0 e argumentos adicionais
+# Running optimizer with x0 and arguments
 initial_guess = [1.0, 0.0]
 res = least_squares(residuals, x0=initial_guess, args=(x_data, y_data))
 m_opt, b_opt = res.x
@@ -130,30 +130,30 @@ m_opt, b_opt = res.x
 
 ---
 
-## 4. Exercício 4: Composed Model Fitting (Modelo por Ramos)
+## 4. Exercise 4: Piecewise / Composed Model Fitting
 
-### Definição Matemática
-O modelo divide o domínio de $x$ em duas regiões funcionais distintas:
+### Mathematical Formulation
+The model divides the domain of $x$ into two separate functional regimes:
 
 $$y(x; \mathbf{p}) = \begin{cases} 
-m \cdot x + b_1 & \text{se } x \le 0 \\
-a \cdot x^2 + c \cdot x + b_2 & \text{se } x > 0 
+m \cdot x + b_1 & \text{if } x \le 0 \\
+a \cdot x^2 + c \cdot x + b_2 & \text{if } x > 0 
 \end{cases}$$
 
-Onde $\mathbf{p} = [m, b_1, a, c, b_2] \in \mathbb{R}^5$.
+Where $\mathbf{p} = [m, b_1, a, c, b_2] \in \mathbb{R}^5$.
 
-### Mecânica de Vetorização (`np.where`)
-A avaliação em NumPy de múltiplos ramos é efetuada sem loops explícitos através de máscaras booleanas:
+### Vectorization Mechanics (`np.where`)
+NumPy evaluates piecewise branches without explicit Python loops using vectorized boolean masking:
 
 ```python
-def predict_composed(x, m, b1, a, c, b2):
+def predict_composed(x: np.ndarray, m: float, b1: float, a: float, c: float, b2: float) -> np.ndarray:
     return np.where(x <= 0, m * x + b1, a * (x ** 2) + c * x + b2)
 ```
 
-O resíduo continua a ser a diferença elemento a elemento:
+The residual function computes the element-wise difference:
 
 ```python
-def composed_residuals(params, x, y):
+def composed_residuals(params: np.ndarray, x: np.ndarray, y: np.ndarray) -> np.ndarray:
     y_pred = predict_composed(x, *params)
     return y_pred - y
 ```
