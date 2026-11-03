@@ -69,8 +69,14 @@ In Open3D, pressing `Ctrl + C` during a visualizer session dumps the camera para
 
 ### 1.3 API Mechanics & Minimal Isolated Snippet
 - `o3d.io.read_point_cloud(filename: str) -> o3d.geometry.PointCloud`
+- `o3d.visualization.draw_geometries([...], zoom=..., front=..., lookat=..., up=...)`: High-level convenience function directly featured in the [Open3D Point Cloud Tutorial](https://www.open3d.org/docs/release/tutorial/geometry/pointcloud.html).
 - `o3d.visualization.Visualizer()`: Lower-level viewer offering granular event and viewpoint control.
-- `vis.get_view_control()`: Accesses the camera controller.
+
+#### Useful Keyboard Shortcuts in the Open3D Window (from official docs):
+- **`H`**: Prints complete list of keyboard shortcuts in the terminal.
+- **`N`**: Toggles surface normal vector visualization on/off.
+- **`+` / `-`**: Increases / decreases the size of points or length of normal lines.
+- **`Ctrl + C`**: Copies current camera viewpoint JSON directly to your operating system clipboard.
 
 ```python
 import open3d as o3d
@@ -78,21 +84,19 @@ import open3d as o3d
 # 1. Load point cloud from disk
 pcd = o3d.io.read_point_cloud("factory.ply")
 
-# 2. Simple interactive display
+# 2. Simple interactive display (as in the Open3D official tutorial)
 o3d.visualization.draw_geometries([pcd], window_name="Raw Factory PCD")
 
-# 3. Deterministic viewpoint initialization via Visualizer:
-vis = o3d.visualization.Visualizer()
-vis.create_window(window_name="Factory Viewpoint", width=1280, height=720)
-vis.add_geometry(pcd)
-
-ctr = vis.get_view_control()
-# Load saved viewpoint JSON (or set lookat, front, up, zoom manually):
-# params = o3d.io.read_pinhole_camera_parameters("viewpoint.json")
-# ctr.convert_from_pinhole_camera_parameters(params)
-
-vis.run()
-vis.destroy_window()
+# 3. Setting initial viewpoint directly in draw_geometries:
+# (You can obtain exact values by pressing Ctrl+C in the viewer window)
+o3d.visualization.draw_geometries(
+    [pcd],
+    window_name="Factory Viewpoint",
+    zoom=0.34,
+    front=[0.42, -0.21, -0.88],
+    lookat=[2.61, 2.04, 1.53],
+    up=[-0.07, -0.98, 0.20]
+)
 ```
 
 ---
