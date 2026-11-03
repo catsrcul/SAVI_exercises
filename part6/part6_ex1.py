@@ -60,7 +60,8 @@ img_b = np.clip(s_opt * img_float + b_opt, 0, 255).astype(np.uint8)
 
 # optimal for both color and contrast
 solution_bc = least_squares(residual_brightness_contrast, x0=[1.0, 0.0], args=(img_float, 80, 60))
-img_bc = np.clip(s_opt * img_float + b_opt, 0, 255).astype(np.uint8)
+s_bc, b_bc = solution_bc.x
+img_bc = np.clip(s_bc * img_float + b_bc, 0, 255).astype(np.uint8)
 
 # Display result
 cv.imshow('Corrected Image brightness', img_b)
