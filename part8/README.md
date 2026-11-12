@@ -1,5 +1,7 @@
 # SAVI - Part 8: 3D Point Cloud Registration, Reference Frames & Object Bounding Boxes
 
+https://www.open3d.org/docs/latest/tutorial/pipelines/icp_registration.html
+
 Welcome to Part 8! In Part 7, we processed a single static point cloud. In real-world robotics and 3D perception, a single sensor scan only captures one side of a room or object (due to self-occlusion and field-of-view limits). To reconstruct a complete 3D model, we must capture multiple views and mathematically align them into a common coordinate frame—a process called **Point Cloud Registration**.
 
 Once a complete 3D scene is registered, we can establish object-centric reference frames (such as a tabletop coordinate system) to segment individual objects and fit 3D **Bounding Boxes** around them.
